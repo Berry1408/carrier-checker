@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホキャリア診断</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+</head>
+<body>
+    <div id="carrier-selector-app"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const CarrierSelectorApp = () => {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [showResult, setShowResult] = useState(false);
+
+            const questions = [
+                {
+                    id: 'usage',
+                    title: '毎月のデータ使用量はどれくらいですか？',
+                    icon: 'icon-wifi',
+                    options: [
+                        { value: 'light', label: '1GB未満（メール、LINE、軽いウェブ閲覧）' },
+                        { value: 'low', label: '1-3GB（SNS、軽い動画視聴）' },
+                        { value: 'medium', label: '3-7GB（動画視聴、音楽ストリーミング）' },
+                        { value: 'high', label: '7-20GB（動画・ゲーム多用）' },
+                        { value: 'heavy', label: '20GB以上（ヘビーユーザー）' },
+                        { value: 'unlimited', label: '無制限で使いたい' }
+                    ]
+                },
+                {
+                    id: 'calls',
+                    title: '通話の使用頻度は？',
+                    icon: 'icon-phone',
+                    options: [
+                        { value: 'none', label: 'ほとんど通話しない' },
+                        { value: 'light', label: '月に数回、短時間' },
+                        { value: 'medium', label: '週に数回、30分程度' },
+                        { value: 'heavy', label: '毎日長時間通話する' },
+                        { value: 'unlimited', label: '完全かけ放題が必要' }
+                    ]
+                },
+                {
+                    id: 'budget',
+                    title: '月額料金の予算はいくらですか？',
+                    icon: 'icon-dollar',
+                    options: [
+                        { value: 'budget', label: '1,000円未満' },
+                        { value: 'low', label: '1,000-2,000円' },
+                        { value: 'medium', label: '2,000-4,000円' },
+                        { value: 'high', label: '4,000-6,000円' },
+                        { value: 'premium', label: '6,000円以上でも良い' }
+                    ]
+                },
+                {
+                    id: 'coverage',
+                    title: '主な利用場所・重視するエリアは？',
+                    icon: 'icon-map',
+                    options: [
+                        { value: 'city', label: '都市部中心（駅、オフィス街など）' },
+                        { value: 'suburban', label: '住宅地・郊外' },
+                        { value: 'rural', label: '地方・山間部・離島' },
+                        { value: 'travel', label: '全国どこでも安定して使いたい' },
+                        { value: 'indoor', label: '建物内・地下でも快適に' }
+                    ]
+                },
+                {
+                    id: 'speed',
+                    title: '通信速度への要求は？',
+                    icon: 'icon-globe',
+                    options: [
+                        { value: 'basic', label: 'メール・LINE ができれば十分' },
+                        { value: 'standard', label: 'ウェブ閲覧・SNS が快適' },
+                        { value: 'fast', label: '動画視聴・ゲームが快適' },
+                        { value: 'ultra', label: '4K動画・大容量ダウンロード' },
+                        { value: '5g', label: '5G高速通信を活用したい' }
+                    ]
+                },
+                {
+                    id: 'priority',
+                    title: '最も重視するポイントは？',
+                    icon: 'icon-shield',
+                    options: [
+                        { value: 'price', label: '料金の安さ' },
+                        { value: 'speed', label: '通信速度' },
+                        { value: 'stability', label: '安定性・つながりやすさ' },
+                        { value: 'service', label: 'サポート・店舗対応' },
+                        { value: 'points', label: 'ポイント還元・特典' }
+                    ]
+                },
+                {
+                    id: 'family',
+                    title: '契約形態・使用状況は？',
+                    icon: 'icon-users',
+                    options: [
+                        { value: 'single', label: '個人契約（1回線）' },
+                        { value: 'family', label: '家族割引を使いたい' },
+                        { value: 'multiple', label: '複数回線契約予定' },
+                        { value: 'senior', label: 'シニア向け割引対象' },
+                        { value: 'student', label: '学生向け割引対象' }
+                    ]
+                },
+                {
+                    id: 'features',
+                    title: '重視する追加サービスは？',
+                    icon: 'icon-clock',
+                    options: [
+                        { value: 'basic', label: '基本的な通信だけで良い' },
+                        { value: 'streaming', label: '動画・音楽サービス込み' },
+                        { value: 'international', label: '海外利用・国際ローミング' },
+                        { value: 'security', label: 'セキュリティ・ウイルス対策' },
+                        { value: 'cloud', label: 'クラウドストレージ・バックアップ' }
+                    ]
+                }
+            ];
+
+            const carriers = {
+                rakuten: {
+                    name: '楽天モバイル',
+                    color: 'bg-red-500',
+                    price: '0円～3,278円',
+                    data: '無制限',
+                    calls: 'Rakuten Link無料',
+                    pros: [
+                        'データ無制限で3,278円',
+                        'Rakuten Link で国内通話無料',
+                        '楽天ポイント還元最大3%',
+                        '海外ローミング2GBまで無料',
+                        'テザリング無料'
+                    ],
+                    cons: [
+                        'エリアが限定的（パートナー回線は5GB）',
+                        '建物内・地下で弱い場合がある',
+                        'Rakuten Link の音質が不安定',
+                        'iPhone一部機能制限'
+                    ],
+                    bestFor: ['unlimited', 'budget', 'low', 'price', 'points', 'international'],
+                    callsScore: { 'none': 2, 'light': 3, 'medium': 2, 'heavy': 3, 'unlimited': 3 }
+                },
+                docomo: {
+                    name: 'ドコモ',
+                    color: 'bg-gray-600',
+                    price: '2,167円～7,315円',
+                    data: '1GB～無制限',
+                    calls: 'かけ放題オプション',
+                    pros: [
+                        '全国カバー率99.9%',
+                        '安定した通信品質',
+                        '充実した店舗サポート',
+                        '5G対応エリア最大級',
+                        'ドコモメール継続利用可能'
+                    ],
+                    cons: [
+                        '料金が高め',
+                        '割引なしだと割高',
+                        '複雑な料金体系',
+                        'データ容量超過時の速度制限'
+                    ],
+                    bestFor: ['stability', 'rural', 'travel', 'service', 'premium', 'indoor', 'family'],
+                    callsScore: { 'none': 1, 'light': 2, 'medium': 3, 'heavy': 3, 'unlimited': 3 }
+                },
+                au: {
+                    name: 'au',
+                    color: 'bg-orange-500',
+                    price: '2,178円～7,238円',
+                    data: '1GB～無制限',
+                    calls: 'かけ放題オプション',
+                    pros: [
+                        '5G対応エリア広範囲',
+                        'Pontaポイント還元',
+                        '家族割引充実',
+                        'au PAY連携でお得',
+                        'Netflix・Prime Video等特典'
+                    ],
+                    cons: [
+                        '料金は中程度',
+                        'プラン体系が複雑',
+                        'サポート品質にバラつき',
+                        'エリアによって速度差'
+                    ],
+                    bestFor: ['family', 'speed', 'suburban', 'high', 'streaming', 'points'],
+                    callsScore: { 'none': 1, 'light': 2, 'medium': 3, 'heavy': 3, 'unlimited': 3 }
+                },
+                softbank: {
+                    name: 'SoftBank',
+                    color: 'bg-blue-500',
+                    price: '2,178円～7,238円',
+                    data: '1GB～無制限',
+                    calls: 'かけ放題オプション',
+                    pros: [
+                        'PayPayポイント還元',
+                        'Yahoo!プレミアム無料',
+                        '5G高速通信',
+                        'LINE使い放題プラン',
+                        'Netflix・Prime Video等特典'
+                    ],
+                    cons: [
+                        '料金高め',
+                        'エリアにバラつき',
+                        'サポート待ち時間長い',
+                        '複雑な割引条件'
+                    ],
+                    bestFor: ['speed', 'city', 'premium', 'service', 'streaming', 'points'],
+                    callsScore: { 'none': 1, 'light': 2, 'medium': 3, 'heavy': 3, 'unlimited': 3 }
+                },
+                ahamo: {
+                    name: 'ahamo',
+                    color: 'bg-green-500',
+                    price: '2,970円～4,950円',
+                    data: '20GB～100GB',
+                    calls: '5分無料＋かけ放題',
+                    pros: [
+                        '20GB + 5分かけ放題で2,970円',
+                        'ドコモ品質で安価',
+                        '海外ローミング20GBまで無料',
+                        'テザリング無料',
+                        'シンプルな料金体系'
+                    ],
+                    cons: [
+                        '店舗サポート限定',
+                        'プラン選択肢少ない',
+                        'キャリアメール別料金',
+                        '家族割引なし'
+                    ],
+                    bestFor: ['medium', 'medium', 'city', 'suburban', 'international', 'single'],
+                    callsScore: { 'none': 1, 'light': 3, 'medium': 3, 'heavy': 2, 'unlimited': 2 }
+                },
+                povo: {
+                    name: 'povo',
+                    color: 'bg-purple-500',
+                    price: '0円～（トッピング制）',
+                    data: '0GB～（トッピング制）',
+                    calls: 'トッピング選択',
+                    pros: [
+                        '基本料金0円',
+                        'トッピング自由選択',
+                        'au品質',
+                        '使わない月は0円',
+                        'eSIM対応'
+                    ],
+                    cons: [
+                        '180日ルール（課金必須）',
+                        'トッピング管理が複雑',
+                        'サポート限定',
+                        'キャリアメール非対応'
+                    ],
+                    bestFor: ['light', 'budget', 'single', 'basic'],
+                    callsScore: { 'none': 3, 'light': 2, 'medium': 1, 'heavy': 1, 'unlimited': 1 }
+                },
+                linemo: {
+                    name: 'LINEMO',
+                    color: 'bg-green-600',
+                    price: '990円～2,728円',
+                    data: '3GB～20GB',
+                    calls: 'かけ放題オプション',
+                    pros: [
+                        'LINE使い放題（データ消費なし）',
+                        '3GB 990円の格安プラン',
+                        'SoftBank品質',
+                        'LINEスタンププレミアム無料',
+                        'PayPayポイント還元'
+                    ],
+                    cons: [
+                        'データ容量選択肢少ない',
+                        '店舗サポートなし',
+                        'キャリアメール非対応',
+                        '家族割引なし'
+                    ],
+                    bestFor: ['low', 'medium', 'low', 'city', 'points', 'single'],
+                    callsScore: { 'none': 1, 'light': 2, 'medium': 2, 'heavy': 2, 'unlimited': 2 }
+                },
+                uqmobile: {
+                    name: 'UQモバイル',
+                    color: 'bg-pink-500',
+                    price: '2,365円～3,278円',
+                    data: '4GB～25GB',
+                    calls: 'かけ放題オプション',
+                    pros: [
+                        'au品質で格安',
+                        '節約モード（低速無制限）',
+                        '店舗サポート充実',
+                        '自宅セット割でお得',
+                        'データ繰り越し可能'
+                    ],
+                    cons: [
+                        'データ容量選択肢限定',
+                        '割引なしだと割高',
+                        '5G対応エリア限定',
+                        'キャリアメール有料'
+                    ],
+                    bestFor: ['low', 'medium', 'suburban', 'service', 'family'],
+                    callsScore: { 'none': 1, 'light': 2, 'medium': 3, 'heavy': 3, 'unlimited': 2 }
+                },
+kurimoba: {
+    name: 'クリプトニンジャモバイル',
+    color: 'bg-yellow-500',
+    price: '1,078円～4,180円',
+    data: '3GB〜UNLIMITED',
+    calls: 'オプション選択',
+    pros: [
+        '利用料金に応じてトークン還元',
+        '貯めたトークンを換金や特典に使える',
+        'エックスモバイル回線利用で安定',
+        'ドコモ回線対応の格安SIM',
+        'Wi-Fiはマルチキャリア対応（ドコモ、au、Softbank、楽天）'
+    ],
+    cons: [
+        'トークンの値動きリスクがある',
+        'FiNANCiEアカウント登録が必要',
+        'ポイント失効期限あり（180日）',
+        '大容量利用時の速度制限あり',
+        '早期解約手数料が発生する場合がある'
+    ],
+    bestFor: ['points', 'price', 'low', 'medium', 'suburban', 'city', 'student'],
+    callsScore: { 'none': 2, 'light': 3, 'medium': 3, 'heavy': 2, 'unlimited': 2 }
+},
+mineo: {
+    name: 'mineo（マイネオ）',
+    color: 'bg-lime-500',
+    price: '1,298円～2,948円',
+    data: '1GB～50GB（マイピタ）、無制限（マイそく）',
+    calls: 'かけ放題オプション・通話パック',
+    pros: [
+        '使い方に合わせてプラン選択可能（マイピタ、マイそく）',
+        '余ったパケットを翌月繰り越し可能',
+        'フリータンク・パスケットでパケット共有',
+        '大手3キャリアに対応、端末そのまま利用可',
+        '活発なコミュニティ「マイネ王」で情報共有',
+        '長期利用特典「ファン∞とく」でお得',
+        '多様なオプションサービス（広告フリー・夜間フリーなど）'
+    ],
+    cons: [
+        '混雑時に通信速度が低下する場合あり',
+        'プランが多く初心者にはわかりづらい',
+        '大容量利用時に速度制限がかかる',
+        '通話料が別途発生する場合あり'
+    ],
+    bestFor: ['price', 'points', 'family', 'low', 'medium', 'suburban', 'city'],
+    callsScore: { 'none': 2, 'light': 3, 'medium': 3, 'heavy': 2, 'unlimited': 2 }
+}
+
+
+            };
+
+            const handleAnswer = (value) => {
+                const newAnswers = { ...answers, [questions[currentQuestion].id]: value };
+                setAnswers(newAnswers);
+                
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    setShowResult(true);
+                }
+            };
+
+            const calculateRecommendation = () => {
+                const scores = {};
+                
+                Object.keys(carriers).forEach(carrier => {
+                    scores[carrier] = 0;
+                    
+                    Object.entries(answers).forEach(([questionId, answer]) => {
+                        if (carriers[carrier].bestFor.includes(answer)) {
+                            scores[carrier] += 2;
+                        }
+                    });
+                    
+                    if (answers.calls && carriers[carrier].callsScore[answers.calls]) {
+                        scores[carrier] += carriers[carrier].callsScore[answers.calls];
+                    }
+                    
+                    if (answers.usage === 'unlimited' && carrier === 'rakuten') scores[carrier] += 4;
+                    if (answers.budget === 'budget' && (carrier === 'rakuten' || carrier === 'povo')) scores[carrier] += 3;
+                    if (answers.coverage === 'rural' && carrier === 'docomo') scores[carrier] += 4;
+                    if (answers.family === 'family' && (carrier === 'au' || carrier === 'docomo')) scores[carrier] += 3;
+                    if (answers.calls === 'unlimited' && carrier === 'rakuten') scores[carrier] += 3;
+                    if (answers.speed === '5g' && (carrier === 'docomo' || carrier === 'au')) scores[carrier] += 2;
+                    if (answers.features === 'streaming' && (carrier === 'au' || carrier === 'softbank')) scores[carrier] += 2;
+                    if (answers.features === 'international' && (carrier === 'rakuten' || carrier === 'ahamo')) scores[carrier] += 3;
+                    
+                    if (answers.usage === 'light' && (carrier === 'povo' || carrier === 'linemo')) scores[carrier] += 2;
+                    if (answers.usage === 'medium' && (carrier === 'ahamo' || carrier === 'uqmobile')) scores[carrier] += 2;
+                    if (answers.usage === 'high' && (carrier === 'docomo' || carrier === 'au' || carrier === 'softbank')) scores[carrier] += 2;
+                });
+                
+                return Object.entries(scores)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([carrier, score]) => ({ carrier, score }));
+            };
+
+            const getUsageAdvice = () => {
+                const topCarrier = calculateRecommendation()[0];
+                let advice = [];
+                
+                if (answers.calls === 'unlimited' && topCarrier.carrier === 'rakuten') {
+                    advice.push('Rakuten Linkアプリを使えば国内通話が完全無料です');
+                }
+                
+                if (answers.budget === 'budget' && topCarrier.carrier === 'povo') {
+                    advice.push('基本料金0円ですが、180日以内に何らかのトッピング購入が必要です');
+                }
+                
+                if (answers.coverage === 'rural' && topCarrier.carrier === 'docomo') {
+                    advice.push('地方・山間部での利用が多い場合、ドコモの通信品質が最も安定しています');
+                }
+                
+                if (answers.features === 'international') {
+                    advice.push('海外利用が多い場合、事前に各キャリアの国際ローミング料金を確認しましょう');
+                }
+                
+                return advice;
+            };
+
+            const restart = () => {
+                setCurrentQuestion(0);
+                setAnswers({});
+                setShowResult(false);
+            };
+
+            if (showResult) {
+                const recommendations = calculateRecommendation();
+                const topCarrier = recommendations[0];
+                const carrierInfo = carriers[topCarrier.carrier];
+                const advice = getUsageAdvice();
+
+                return (
+                    <div>
+                        <div className="bg-white rounded-2xl p-8">
+                            <div className="text-center mb-8">
+                                <span className="icon icon-smartphone text-6xl mb-4 block"></span>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">診断結果</h1>
+                                <p className="text-gray-600">あなたにおすすめのキャリアは...</p>
+                            </div>
+
+                            <div className="text-center mb-8">
+                                <div className={`inline-block px-8 py-4 rounded-2xl text-white text-2xl font-bold ${carrierInfo.color}`}>
+                                    {carrierInfo.name}
+                                </div>
+                                <div className="mt-4 grid grid-cols-3 gap-4 max-w-md mx-auto text-sm">
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                        <div className="text-gray-600">料金目安</div>
+                                        <div className="font-semibold">{carrierInfo.price}</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                        <div className="text-gray-600">データ容量</div>
+                                        <div className="font-semibold">{carrierInfo.data}</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                        <div className="text-gray-600">通話</div>
+                                        <div className="font-semibold">{carrierInfo.calls}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-green-50 p-6 rounded-xl">
+                                    <h3 className="text-lg font-semibold text-green-800 mb-3">おすすめポイント</h3>
+                                    <ul className="space-y-2">
+                                        {carrierInfo.pros.map((pro, index) => (
+                                            <li key={index} className="flex items-start text-green-700">
+                                                <span className="icon-chevron icon-sm"></span>
+                                                <span className="text-sm">{pro}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div className="bg-yellow-50 p-6 rounded-xl">
+                                    <h3 className="text-lg font-semibold text-yellow-800 mb-3">注意点</h3>
+                                    <ul className="space-y-2">
+                                        {carrierInfo.cons.map((con, index) => (
+                                            <li key={index} className="flex items-start text-yellow-700">
+                                                <span className="icon-chevron icon-sm"></span>
+                                                <span className="text-sm">{con}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {advice.length > 0 && (
+                                <div className="bg-blue-50 p-6 rounded-xl mb-8">
+                                    <h3 className="text-lg font-semibold text-blue-800 mb-3">あなたへのアドバイス</h3>
+                                    <ul className="space-y-2">
+                                        {advice.map((item, index) => (
+                                            <li key={index} className="flex items-start text-blue-700">
+                                                <span className="icon-chevron icon-sm"></span>
+                                                <span className="text-sm">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <div className="bg-gray-50 p-6 rounded-xl mb-8">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4">その他の候補</h3>
+                                <div className="space-y-3">
+                                    {recommendations.slice(1, 4).map(({ carrier, score }) => (
+                                        <div key={carrier} className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                                            <div className="flex-1">
+                                                <div className="font-medium">{carriers[carrier].name}</div>
+                                                <div className="text-sm text-gray-600">{carriers[carrier].price}</div>
+                                            </div>
+                                            <div className="flex items-center ml-4">
+                                                <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                                    <div 
+                                                        className="bg-blue-500 h-2 rounded-full" 
+                                                        style={{ width: `${Math.min(score / topCarrier.score * 100, 100)}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-sm text-gray-600 w-12">{score}点</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-center">
+                                <button
+                                    onClick={restart}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors duration-200 inline-flex items-center"
+                                >
+                                    <span className="icon-refresh icon-sm"></span>
+                                    もう一度診断する
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="bg-white rounded-2xl p-8">
+                        <div className="text-center mb-8">
+                            <span className="icon icon-smartphone text-6xl mb-4 block"></span>
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">スマホキャリア診断</h1>
+                            <p className="text-gray-600 text-sm">8つの質問に答えて最適なキャリアを見つけよう</p>
+                        </div>
+
+                        <div className="mb-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-sm text-gray-600">質問 {currentQuestion + 1} / {questions.length}</span>
+                                <span className="text-sm text-gray-600">{Math.round((currentQuestion + 1) / questions.length * 100)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${(currentQuestion + 1) / questions.length * 100}%` }}
+                                ></div>
+                            </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <div className="flex items-center mb-6">
+                                <span className={`icon ${questions[currentQuestion].icon}`}></span>
+                                <h2 className="text-xl font-semibold">{questions[currentQuestion].title}</h2>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {questions[currentQuestion].options.map((option, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleAnswer(option.value)}
+                                        className="w-full p-4 text-left bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors duration-200 border-2 border-transparent hover:border-blue-200"
+                                    >
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 rounded-full border-2 border-gray-300 mr-4"></div>
+                                            <span className="font-medium text-sm">{option.label}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {currentQuestion > 0 && (
+                            <div className="text-center">
+                                <button
+                                    onClick={() => setCurrentQuestion(currentQuestion - 1)}
+                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    前の質問に戻る
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CarrierSelectorApp />, document.getElementById('carrier-selector-app'));
+    </script>
+</body>
+</html>
